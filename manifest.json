@@ -1,7 +1,7 @@
 {
 	"id": "headings-in-explorer",
 	"name": "Headings in Explorer",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Show headings in the file explorer in Obsidian.",
 	"author": "patrickchiang",

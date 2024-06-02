@@ -343,7 +343,9 @@ export default class HeadingPlugin extends Plugin {
 					}, 500);
 				});
 			};
-			headingItem.style.marginLeft = `${(heading.level - 1) * 10}px`;
+
+			const getMarginMultiplier = parseInt(getComputedStyle(document.body).getPropertyValue('--clickable-heading-margin-multiplier')) || 10;
+			headingItem.style.marginLeft = `${(heading.level - 1) * getMarginMultiplier}px`;
 			heading.uiElement = headingItem;
 
 			headingContainer.appendChild(headingItem);

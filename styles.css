@@ -1,3 +1,7 @@
+body {
+    --clickable-heading-margin-multiplier: 10;
+}
+
 .theme-dark {
     --highlight-header-primary: #FBF0D9;
     --highlight-header-secondary: #5F4B32;
@@ -16,6 +20,7 @@
     font-size: 90%;
     width: fit-content;
     transition: background-color 0.3s ease;
+    margin-left: var()
 }
 
 .unclickable-heading {
