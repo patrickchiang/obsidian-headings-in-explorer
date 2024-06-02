@@ -1,0 +1,36 @@
+.theme-dark {
+    --highlight-header-primary: #FBF0D9;
+    --highlight-header-secondary: #5F4B32;
+}
+
+.theme-light {
+    --highlight-header-primary: #5F4B32;
+    --highlight-header-secondary: #FBF0D9;
+}
+
+.clickable-heading {
+    cursor: pointer;
+    display: block;
+    color: var(--text-normal);
+    padding: 2px 10px;
+    font-size: 90%;
+    width: fit-content;
+    transition: background-color 0.3s ease;
+}
+
+.unclickable-heading {
+    display: block;
+    color: var(--text-normal);
+    margin: 2px 0;
+    font-size: 90%;
+    transition: background-color 0.3s ease;
+}
+
+.clickable-heading:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.highlighted-heading {
+    background-color: var(--highlight-header-primary);
+    color: var(--highlight-header-secondary);
+}
