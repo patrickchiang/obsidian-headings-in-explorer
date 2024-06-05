@@ -91,17 +91,20 @@ export default class HeadingPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(timedRetry);
 
-		this.registerEvent(
-			this.app.vault.on('modify', async (file) => {
-				if (file instanceof TFile && file.extension === 'md') {
-					// wait for the metadata cache to update
-					setTimeout(async () => {
-						const headingsForFile = await this.createHeadingsForFile(file) as HeadingEntry[];
-						this.cachedHeadings[file.name] = headingsForFile;
-					}, 500);
-				}
-			})
-		);
+
+		const onFileModified = async (file: TFile) => {
+			if (file instanceof TFile && file.extension === 'md') {
+				// wait for the metadata cache to update
+				setTimeout(async () => {
+					const headingsForFile = await this.createHeadingsForFile(file) as HeadingEntry[];
+					this.cachedHeadings[file.name] = headingsForFile;
+					this.clearExplorerHeight();
+				}, 500);
+			}
+		};
+
+		this.registerEvent(this.app.vault.on('modify', onFileModified));
+		this.registerEvent(this.app.vault.on('rename', onFileModified));
 
 		// track my last active markdown leaf
 		this.registerEvent(
@@ -141,14 +144,14 @@ export default class HeadingPlugin extends Plugin {
 	async init() {
 		this.setupLocateButton();
 
-		// zeroes out the heights of the file explorer items, or scrolling will break
-		this.clearExplorerHeight();
-
 		const files = this.app.vault.getMarkdownFiles();
 		for (const file of files) {
 			const headingsForFile = await this.createHeadingsForFile(file) as HeadingEntry[];
 			this.cachedHeadings[file.name] = headingsForFile;
 		}
+
+		// zeroes out the heights of the file explorer items, or scrolling will break
+		this.clearExplorerHeight();
 	}
 
 	async setupLocateButton() {
@@ -331,7 +334,9 @@ export default class HeadingPlugin extends Plugin {
 			headingItem.textContent = heading.text;
 
 			headingItem.classList.add('clickable-heading');
-			headingItem.onclick = () => {
+
+			headingItem.on('click', '*', (e: MouseEvent) => {
+				e.preventDefault();
 				this.app.workspace.openLinkText('', file.path, false, {
 					active: true,
 					eState: {
@@ -342,7 +347,22 @@ export default class HeadingPlugin extends Plugin {
 						this.unhighlightSelection(heading.line);
 					}, 500);
 				});
-			};
+			});
+			headingItem.on('auxclick', '*', (e: MouseEvent) => {
+				if (e.button !== 1) return;
+
+				e.preventDefault();
+				this.app.workspace.openLinkText('', file.path, true, {
+					active: true,
+					eState: {
+						line: heading.line
+					}
+				}).then(() => {
+					setTimeout(() => {
+						this.unhighlightSelection(heading.line);
+					}, 500);
+				});
+			});
 
 			const getMarginMultiplier = parseInt(getComputedStyle(document.body).getPropertyValue('--clickable-heading-margin-multiplier')) || 10;
 			headingItem.style.marginLeft = `${(heading.level - 1) * getMarginMultiplier}px`;
@@ -450,7 +470,8 @@ class HeadingSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h2', { text: 'Custom heading patterns' });
+		new Setting(containerEl).setName('Custom heading patterns').setHeading();
+		// containerEl.createEl('h2', { text: 'Custom heading patterns' });
 		const regexEl = containerEl.createDiv('regex-patterns');
 
 		new Setting(this.containerEl)
@@ -465,7 +486,8 @@ class HeadingSettingTab extends PluginSettingTab {
 			this.addRegexPatternField(regexEl, pattern, index);
 		});
 
-		containerEl.createEl('h2', { text: 'Troubleshoot' });
+		new Setting(containerEl).setName('Troubleshoot').setHeading();
+		// containerEl.createEl('h2', { text: 'Troubleshoot' });
 
 		new Setting(containerEl)
 			.setName('Recalculate headings')
