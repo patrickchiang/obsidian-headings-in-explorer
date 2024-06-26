@@ -50,6 +50,8 @@ You can now match lines that start with TODO: in the files to show up as if they
 
 ![todo](img/todo.png)
 
+The headings in explorer functionality can be toggled with the command "Toggle File Explorer Headings", and you can set a hotkey for the command in your shortcuts menu to expedite the toggle.
+
 ## Development
 
 - Clone this repo.
