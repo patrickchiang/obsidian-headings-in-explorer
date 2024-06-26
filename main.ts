@@ -1,6 +1,7 @@
 import { App, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TFile, View, WorkspaceLeaf } from 'obsidian';
 
 interface HeadingPluginSettings {
+	showHeadings: boolean;
 	showHeading1: boolean;
 	showHeading2: boolean;
 	showHeading3: boolean;
@@ -11,6 +12,7 @@ interface HeadingPluginSettings {
 }
 
 const DEFAULT_SETTINGS: HeadingPluginSettings = {
+	showHeadings: true,
 	showHeading1: true,
 	showHeading2: true,
 	showHeading3: true,
@@ -91,8 +93,11 @@ export default class HeadingPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(timedRetry);
 
-
 		const onFileModified = async (file: TFile) => {
+			if (!this.settings.showHeadings) {
+				return;
+			}
+
 			if (file instanceof TFile && file.extension === 'md') {
 				// wait for the metadata cache to update
 				setTimeout(async () => {
@@ -114,6 +119,16 @@ export default class HeadingPlugin extends Plugin {
 				}
 			})
 		);
+
+		this.addCommand({
+			id: 'toggle-headings',
+			name: 'Toggle File Explorer Headings',
+			callback: async () => {
+				this.settings.showHeadings = !this.settings.showHeadings;
+				await this.saveSettings();
+				await this.recalculateHeadings();
+			}
+		});
 	}
 
 	// binary search sorted array to find closest line on or above target
@@ -143,6 +158,11 @@ export default class HeadingPlugin extends Plugin {
 
 	async init() {
 		this.setupLocateButton();
+
+		if (!this.settings.showHeadings) {
+			this.clearExplorerHeight();
+			return;
+		}
 
 		const files = this.app.vault.getMarkdownFiles();
 		for (const file of files) {
@@ -275,8 +295,6 @@ export default class HeadingPlugin extends Plugin {
 		}
 	}
 
-
-
 	async getFileExplorerFileItems(): Promise<Record<string, FileItem>> {
 		return ((await this.getFileExplorerLeaf()).view as FileExplorerView).fileItems;
 	}
@@ -314,6 +332,19 @@ export default class HeadingPlugin extends Plugin {
 		newContainer.classList.add('file-heading-container');
 		item.appendChild(newContainer);
 		return newContainer;
+	}
+
+	async clearHeadings() {
+		const fileExplorerLeafItems = await this.getFileExplorerFileItems();
+
+		for (const key in fileExplorerLeafItems) {
+			if (!fileExplorerLeafItems.hasOwnProperty(key)) continue;
+			const obj = fileExplorerLeafItems[key];
+			const item = obj.innerEl;
+			const headingContainer = this.getHeadingContainer(item);
+			// clear existing headings
+			headingContainer.replaceChildren();
+		}
 	}
 
 	async createClickableHeadings(file: TFile, headings: HeadingEntry[]) {
@@ -393,6 +424,12 @@ export default class HeadingPlugin extends Plugin {
 		await this.saveData(this.settings);
 		this.init();
 	}
+
+	async recalculateHeadings() {
+		this.cachedHeadings = {};
+		await this.clearHeadings();
+		await this.init();
+	}
 }
 
 class HeadingSettingTab extends PluginSettingTab {
@@ -409,6 +446,17 @@ class HeadingSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName('Show headings')
+			.setDesc('Show headings in the file explorer. Toggle off to restore normal headings.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showHeadings)
+				.onChange(async (value) => {
+					this.plugin.settings.showHeadings = value;
+					await this.plugin.saveSettings();
+					this.plugin.recalculateHeadings();
+				}));
 
 		new Setting(containerEl)
 			.setName('Show heading 1')
@@ -471,7 +519,6 @@ class HeadingSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl).setName('Custom heading patterns').setHeading();
-		// containerEl.createEl('h2', { text: 'Custom heading patterns' });
 		const regexEl = containerEl.createDiv('regex-patterns');
 
 		new Setting(this.containerEl)
@@ -487,7 +534,6 @@ class HeadingSettingTab extends PluginSettingTab {
 		});
 
 		new Setting(containerEl).setName('Troubleshoot').setHeading();
-		// containerEl.createEl('h2', { text: 'Troubleshoot' });
 
 		new Setting(containerEl)
 			.setName('Recalculate headings')
@@ -496,8 +542,7 @@ class HeadingSettingTab extends PluginSettingTab {
 				button.setButtonText('Recalculate headings')
 					.setWarning()
 					.onClick(async () => {
-						this.plugin.cachedHeadings = {};
-						await this.plugin.init();
+						this.plugin.recalculateHeadings();
 						new Notice('Headings recalculated.');
 					});
 			});
@@ -513,6 +558,8 @@ class HeadingSettingTab extends PluginSettingTab {
 						this.regexArray = this.plugin.settings.regexArray;
 						await this.plugin.saveSettings();
 						this.display();
+
+						this.plugin.recalculateHeadings();
 						new Notice('Settings reset to default.');
 					});
 			});

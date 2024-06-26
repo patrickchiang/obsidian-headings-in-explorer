@@ -1,7 +1,7 @@
 {
 	"id": "headings-in-explorer",
 	"name": "Headings in Explorer",
-	"version": "1.0.1",
+	"version": "1.0.3",
 	"minAppVersion": "1.6.2",
 	"description": "Show headings in the file explorer.",
 	"author": "patrickchiang",

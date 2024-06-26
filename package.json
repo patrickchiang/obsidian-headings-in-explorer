@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-headings-in-explorer",
-	"version": "1.0.1",
+	"version": "1.0.3",
 	"description": "Show headings in the file explorer in Obsidian.",
 	"main": "main.js",
 	"scripts": {
@@ -20,6 +20,5 @@
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
 	},
-	"dependencies": {
-	}
+	"dependencies": {}
 }
